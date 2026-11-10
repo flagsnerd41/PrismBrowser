@@ -21,6 +21,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager
 import eightbitlab.com.blurview.BlurView
+import eightbitlab.com.blurview.BlurTarget
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.WebChromeClient
@@ -35,6 +36,7 @@ import android.widget.Toast
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private lateinit var blurTarget: BlurTarget
     private lateinit var addressBar: EditText
     private lateinit var progressTrack: View
     private lateinit var progressFill: View
@@ -69,8 +71,14 @@ class MainActivity : Activity() {
     private fun buildInterface() {
         val root = FrameLayout(this).apply { setBackgroundColor(ink) }
 
-        webView = WebView(this).apply { setBackgroundColor(Color.WHITE) }
-        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
+        // BlurTarget records the webpage once through BlurView's hardware RenderNode pipeline.
+        blurTarget = BlurTarget(this)
+        webView = WebView(this).apply {
+            setBackgroundColor(Color.WHITE)
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+        blurTarget.addView(webView, FrameLayout.LayoutParams(-1, -1))
+        root.addView(blurTarget, FrameLayout.LayoutParams(-1, -1))
 
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
@@ -174,7 +182,7 @@ class MainActivity : Activity() {
 
         fadeBlurLayers.forEach { blur ->
             // One continuous BlurView gives a real, even backdrop blur without strip banding.
-            blur.setupWith(root)
+            blur.setupWith(blurTarget)
                 .setFrameClearDrawable(root.background)
                 .setBlurRadius(8f)
                 .setOverlayColor(Color.TRANSPARENT)

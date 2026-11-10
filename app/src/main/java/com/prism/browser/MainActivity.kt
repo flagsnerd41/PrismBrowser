@@ -68,8 +68,8 @@ class MainActivity : Activity() {
 
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
-        addFadeBlur(root, Gravity.TOP, 100, 20, reverse = false)
-        addFadeBlur(root, Gravity.BOTTOM, 112, 22, reverse = true)
+        addFadeBlur(root, Gravity.TOP, 100, 10)
+        addFadeBlur(root, Gravity.BOTTOM, 110, 10)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -172,8 +172,8 @@ class MainActivity : Activity() {
             .setOverlayColor(Color.argb(20, 220, 224, 238))
 
         fadeBlurLayers.forEachIndexed { index, blur ->
-            val count = if (index < 20) 20 else 22
-            val layerIndex = if (index < 20) index else index - 20
+            val count = 10
+            val layerIndex = if (index < 10) index else index - 10
             val strength = 1f - (layerIndex.toFloat() / count)
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
@@ -200,8 +200,7 @@ class MainActivity : Activity() {
         root: FrameLayout,
         gravity: Int,
         totalHeightDp: Int,
-        stripCount: Int,
-        reverse: Boolean
+        stripCount: Int
     ) {
         val stripHeight = totalHeightDp.toFloat() / stripCount
         repeat(stripCount) { index ->

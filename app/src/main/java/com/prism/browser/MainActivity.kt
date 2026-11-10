@@ -40,7 +40,7 @@ class MainActivity : Activity() {
     private lateinit var progressFill: View
     private lateinit var backButton: TextView
     private lateinit var forwardButton: TextView
-    private lateinit var toolbarBlur: FrameLayout
+    private lateinit var toolbarBlur: BlurView
     private lateinit var header: LinearLayout
     private val fadeBlurLayers = mutableListOf<BlurView>()
     private lateinit var toolbarParams: FrameLayout.LayoutParams

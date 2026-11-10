@@ -34,7 +34,7 @@ class MainActivity : Activity() {
     private lateinit var progressFill: View
     private lateinit var backButton: TextView
     private lateinit var forwardButton: TextView
-    private lateinit var toolbarBlur: BlurView
+    private lateinit var toolbarBlur: FrameLayout
     private lateinit var header: LinearLayout
     private val fadeBlurLayers = mutableListOf<BlurView>()
     private lateinit var toolbarParams: FrameLayout.LayoutParams
@@ -69,7 +69,6 @@ class MainActivity : Activity() {
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
         addFadeBlur(root, Gravity.TOP, 100, 10)
-        addFadeBlur(root, Gravity.BOTTOM, 110, 10)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -110,8 +109,9 @@ class MainActivity : Activity() {
         root.addView(progressFrame, progressParams)
 
         // A single frosted-glass surface: BlurView samples the live webpage behind it.
-        toolbarBlur = BlurView(this).apply {
-            background = rounded(Color.argb(72, 205, 210, 225), 36)
+        toolbarBlur = FrameLayout(this).apply {
+            // Solid floating pill: the bottom edge stays clear, with no backdrop blur.
+            background = rounded(Color.argb(238, 35, 37, 46), 36)
             clipToOutline = true
             elevation = dp(14).toFloat()
         }
@@ -166,14 +166,9 @@ class MainActivity : Activity() {
 
         setContentView(root)
 
-        toolbarBlur.setupWith(root)
-            .setFrameClearDrawable(root.background)
-            .setBlurRadius(10f)
-            .setOverlayColor(Color.argb(20, 220, 224, 238))
-
         fadeBlurLayers.forEachIndexed { index, blur ->
             val count = 10
-            val layerIndex = if (index < 10) index else index - 10
+            val layerIndex = index
             val strength = 1f - (layerIndex.toFloat() / count)
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)

@@ -115,9 +115,9 @@ class MainActivity : Activity() {
         root.addView(progressFrame, progressParams)
 
         // A single frosted-glass surface: BlurView samples the live webpage behind it.
-        toolbarBlur = FrameLayout(this).apply {
-            // Solid floating pill: the bottom edge stays clear, with no backdrop blur.
-            background = rounded(Color.argb(238, 35, 37, 46), 36)
+        toolbarBlur = BlurView(this).apply {
+            // Subtle live backdrop blur, contained only inside the floating pill.
+            background = rounded(Color.argb(48, 35, 37, 46), 36)
             clipToOutline = true
             elevation = dp(14).toFloat()
         }
@@ -179,6 +179,11 @@ class MainActivity : Activity() {
                 .setBlurRadius(8f)
                 .setOverlayColor(Color.TRANSPARENT)
         }
+
+        toolbarBlur.setupWith(root)
+            .setFrameClearDrawable(root.background)
+            .setBlurRadius(8f)
+            .setOverlayColor(Color.argb(18, 35, 37, 46))
 
         // Extend the fades behind system bars while keeping controls clear of them.
         root.setOnApplyWindowInsetsListener { _, insets ->

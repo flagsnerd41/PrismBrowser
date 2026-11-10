@@ -68,6 +68,22 @@ class MainActivity : Activity() {
         webView = WebView(this).apply { setBackgroundColor(Color.WHITE) }
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
 
+        // Fades are behind the browser controls, not painted over the page or toolbar.
+        topFade = BlurView(this).apply {
+            background = GradientDrawable(
+                Orientation.TOP_BOTTOM,
+                intArrayOf(Color.argb(78, 28, 30, 38), Color.argb(0, 28, 30, 38))
+            )
+        }
+        bottomFade = BlurView(this).apply {
+            background = GradientDrawable(
+                Orientation.BOTTOM_TOP,
+                intArrayOf(Color.argb(92, 24, 25, 32), Color.argb(0, 24, 25, 32))
+            )
+        }
+        root.addView(topFade, FrameLayout.LayoutParams(-1, dp(76), Gravity.TOP))
+        root.addView(bottomFade, FrameLayout.LayoutParams(-1, dp(104), Gravity.BOTTOM))
+
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -161,27 +177,12 @@ class MainActivity : Activity() {
         toolbarBlur.addView(toolbar, FrameLayout.LayoutParams(-1, -1))
         root.addView(toolbarBlur, toolbarParams)
 
-        // Soft live-blur fades at the top system bar and bottom gesture area.
-        topFade = BlurView(this).apply {
-            background = GradientDrawable(
-                Orientation.TOP_BOTTOM,
-                intArrayOf(Color.argb(118, 28, 30, 38), Color.argb(0, 28, 30, 38))
-            )
-        }
-        bottomFade = BlurView(this).apply {
-            background = GradientDrawable(
-                Orientation.BOTTOM_TOP,
-                intArrayOf(Color.argb(142, 24, 25, 32), Color.argb(0, 24, 25, 32))
-            )
-        }
-        root.addView(topFade, FrameLayout.LayoutParams(-1, dp(132), Gravity.TOP))
-        root.addView(bottomFade, FrameLayout.LayoutParams(-1, dp(150), Gravity.BOTTOM))
         setContentView(root)
 
         val blurSetup: (BlurView) -> Unit = { blur ->
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(15f)
+                .setBlurRadius(12f)
                 .setOverlayColor(Color.argb(28, 220, 224, 238))
         }
         blurSetup(toolbarBlur)
@@ -197,7 +198,7 @@ class MainActivity : Activity() {
             }.also { header.layoutParams = it }
             toolbarParams.bottomMargin = navInset + dp(14)
             toolbarBlur.layoutParams = toolbarParams
-            bottomFade.layoutParams = FrameLayout.LayoutParams(-1, dp(150) + navInset, Gravity.BOTTOM)
+            bottomFade.layoutParams = FrameLayout.LayoutParams(-1, dp(104) + navInset, Gravity.BOTTOM)
             insets
         }
         root.requestApplyInsets()

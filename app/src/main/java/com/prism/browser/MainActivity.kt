@@ -34,7 +34,7 @@ class MainActivity : Activity() {
     private lateinit var forwardButton: TextView
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
-    private val panel = Color.rgb(34, 36, 45)
+    private val pillColor = Color.rgb(30, 32, 40)
     private val muted = Color.rgb(157, 160, 175)
     private val accent = Color.rgb(190, 174, 255)
 
@@ -44,23 +44,19 @@ class MainActivity : Activity() {
         window.navigationBarColor = ink
         buildInterface()
         configureWebView()
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState)
-        } else {
-            loadHome()
-        }
+        if (savedInstanceState != null) webView.restoreState(savedInstanceState) else loadHome()
     }
 
     private fun buildInterface() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(ink)
-        }
+        val root = FrameLayout(this).apply { setBackgroundColor(ink) }
+
+        webView = WebView(this).apply { setBackgroundColor(Color.WHITE) }
+        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(18), dp(10), dp(18), dp(8))
+            setPadding(dp(20), dp(8), dp(18), dp(8))
         }
         val brand = TextView(this).apply {
             text = "prism"
@@ -68,20 +64,19 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
         }
-        val brandDot = TextView(this).apply {
-            text = "  •"
+        val dot = TextView(this).apply {
+            text = " •"
             textSize = 18f
             setTextColor(accent)
         }
         header.addView(brand)
-        header.addView(brandDot)
-        val spacer = View(this)
-        header.addView(spacer, LinearLayout.LayoutParams(0, 1, 1f))
-        val tabs = makeButton("▢", panel) {
+        header.addView(dot)
+        header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        val tabs = makeButton("▢", Color.TRANSPARENT) {
             Toast.makeText(this, "Tabs are coming in the next update", Toast.LENGTH_SHORT).show()
         }
-        header.addView(tabs, LinearLayout.LayoutParams(dp(42), dp(38)))
-        root.addView(header)
+        header.addView(tabs, LinearLayout.LayoutParams(dp(42), dp(42)))
+        root.addView(header, FrameLayout.LayoutParams(-1, dp(58), Gravity.TOP))
 
         progressTrack = View(this).apply { setBackgroundColor(Color.TRANSPARENT) }
         progressFill = View(this).apply {
@@ -91,33 +86,33 @@ class MainActivity : Activity() {
         val progressFrame = FrameLayout(this)
         progressFrame.addView(progressTrack, FrameLayout.LayoutParams(-1, dp(2)))
         progressFrame.addView(progressFill, FrameLayout.LayoutParams(0, dp(2)))
-        root.addView(progressFrame)
-
-        webView = WebView(this).apply { setBackgroundColor(ink) }
-        root.addView(webView, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val bottomArea = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(9), dp(14), dp(10))
-            setBackgroundColor(ink)
+        val progressParams = FrameLayout.LayoutParams(-1, dp(2), Gravity.TOP).apply {
+            topMargin = dp(58)
         }
+        root.addView(progressFrame, progressParams)
+
         val toolbar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(panel, 30)
-            setPadding(dp(7), dp(7), dp(7), dp(7))
+            background = rounded(pillColor, 36)
+            setPadding(dp(8), dp(7), dp(8), dp(7))
+            elevation = dp(12).toFloat()
         }
 
-        backButton = makeButton("‹", panel) { if (webView.canGoBack()) webView.goBack() }
-        forwardButton = makeButton("›", panel) { if (webView.canGoForward()) webView.goForward() }
+        backButton = makeButton("‹", Color.TRANSPARENT) {
+            if (webView.canGoBack()) webView.goBack()
+        }
+        forwardButton = makeButton("›", Color.TRANSPARENT) {
+            if (webView.canGoForward()) webView.goForward()
+        }
         addressBar = EditText(this).apply {
             setSingleLine(true)
             textSize = 14f
             setTextColor(Color.WHITE)
             setHintTextColor(muted)
             hint = "Search or enter address"
-            setPadding(dp(12), 0, dp(8), 0)
-            background = rounded(Color.rgb(48, 50, 61), 22)
+            setPadding(dp(8), 0, dp(8), 0)
+            background = null
             imeOptions = EditorInfo.IME_ACTION_GO
             inputType = android.text.InputType.TYPE_CLASS_TEXT or
                 android.text.InputType.TYPE_TEXT_VARIATION_URI
@@ -129,26 +124,21 @@ class MainActivity : Activity() {
                 } else false
             }
         }
-        val bookmark = makeButton("☆", panel) { saveBookmark() }
-        val reload = makeButton("↻", panel) { webView.reload() }
+        val bookmark = makeButton("☆", Color.TRANSPARENT) { saveBookmark() }
+        val reload = makeButton("↻", Color.TRANSPARENT) { webView.reload() }
 
-        toolbar.addView(backButton, LinearLayout.LayoutParams(dp(36), dp(40)))
-        toolbar.addView(forwardButton, LinearLayout.LayoutParams(dp(32), dp(40)))
-        toolbar.addView(addressBar, LinearLayout.LayoutParams(0, dp(40), 1f))
-        toolbar.addView(bookmark, LinearLayout.LayoutParams(dp(36), dp(40)).apply { leftMargin = dp(5) })
-        toolbar.addView(reload, LinearLayout.LayoutParams(dp(36), dp(40)))
-        bottomArea.addView(toolbar)
+        toolbar.addView(backButton, LinearLayout.LayoutParams(dp(34), dp(42)))
+        toolbar.addView(forwardButton, LinearLayout.LayoutParams(dp(30), dp(42)))
+        toolbar.addView(addressBar, LinearLayout.LayoutParams(0, dp(42), 1f))
+        toolbar.addView(bookmark, LinearLayout.LayoutParams(dp(36), dp(42)))
+        toolbar.addView(reload, LinearLayout.LayoutParams(dp(36), dp(42)))
 
-        val caption = TextView(this).apply {
-            text = "PRIVATE BY DESIGN  ·  PRISM BROWSER"
-            textSize = 9f
-            letterSpacing = 1.3f
-            gravity = Gravity.CENTER
-            setTextColor(muted)
-            setPadding(0, dp(9), 0, 0)
+        val toolbarParams = FrameLayout.LayoutParams(-1, dp(58), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            leftMargin = dp(14)
+            rightMargin = dp(14)
+            bottomMargin = dp(22)
         }
-        bottomArea.addView(caption)
-        root.addView(bottomArea)
+        root.addView(toolbar, toolbarParams)
         setContentView(root)
         updateNavigationButtons()
     }
@@ -249,10 +239,10 @@ class MainActivity : Activity() {
     private fun makeButton(label: String, color: Int, action: () -> Unit): TextView =
         TextView(this).apply {
             text = label
-            textSize = 23f
+            textSize = 24f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            background = rounded(color, 22)
+            background = rounded(color, 24)
             isClickable = true
             isFocusable = true
             setOnClickListener { action() }

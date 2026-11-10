@@ -14,6 +14,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager
+import android.graphics.drawable.GradientDrawable.Orientation
 import eightbitlab.com.blurview.BlurView
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
@@ -35,6 +36,10 @@ class MainActivity : Activity() {
     private lateinit var backButton: TextView
     private lateinit var forwardButton: TextView
     private lateinit var toolbarBlur: BlurView
+    private lateinit var header: LinearLayout
+    private lateinit var topFade: BlurView
+    private lateinit var bottomFade: BlurView
+    private lateinit var toolbarParams: FrameLayout.LayoutParams
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
     private val pillColor = Color.rgb(30, 32, 40)
@@ -43,9 +48,15 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = ink
-        window.navigationBarColor = ink
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         buildInterface()
         configureWebView()
         if (savedInstanceState != null) webView.restoreState(savedInstanceState) else loadHome()
@@ -57,7 +68,7 @@ class MainActivity : Activity() {
         webView = WebView(this).apply { setBackgroundColor(Color.WHITE) }
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
 
-        val header = LinearLayout(this).apply {
+        header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(8), dp(18), dp(8))
@@ -97,7 +108,7 @@ class MainActivity : Activity() {
 
         // A single frosted-glass surface: BlurView samples the live webpage behind it.
         toolbarBlur = BlurView(this).apply {
-            background = rounded(Color.argb(112, 38, 40, 50), 36)
+            background = rounded(Color.argb(72, 205, 210, 225), 36)
             clipToOutline = true
             elevation = dp(14).toFloat()
         }
@@ -142,20 +153,54 @@ class MainActivity : Activity() {
         toolbar.addView(bookmark, LinearLayout.LayoutParams(dp(36), dp(42)))
         toolbar.addView(reload, LinearLayout.LayoutParams(dp(36), dp(42)))
 
-        val toolbarParams = FrameLayout.LayoutParams(-1, dp(58), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+        toolbarParams = FrameLayout.LayoutParams(-1, dp(58), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
             leftMargin = dp(14)
             rightMargin = dp(14)
             bottomMargin = dp(22)
         }
         toolbarBlur.addView(toolbar, FrameLayout.LayoutParams(-1, -1))
         root.addView(toolbarBlur, toolbarParams)
+
+        // Soft live-blur fades at the top system bar and bottom gesture area.
+        topFade = BlurView(this).apply {
+            background = GradientDrawable(
+                Orientation.TOP_BOTTOM,
+                intArrayOf(Color.argb(118, 28, 30, 38), Color.argb(0, 28, 30, 38))
+            )
+        }
+        bottomFade = BlurView(this).apply {
+            background = GradientDrawable(
+                Orientation.BOTTOM_TOP,
+                intArrayOf(Color.argb(142, 24, 25, 32), Color.argb(0, 24, 25, 32))
+            )
+        }
+        root.addView(topFade, FrameLayout.LayoutParams(-1, dp(132), Gravity.TOP))
+        root.addView(bottomFade, FrameLayout.LayoutParams(-1, dp(150), Gravity.BOTTOM))
         setContentView(root)
 
-        // Keep the pill above Gboard when the address field is focused.
-        toolbarBlur.setupWith(root)
-            .setFrameClearDrawable(root.background)
-            .setBlurRadius(20f)
-            .setOverlayColor(Color.argb(88, 38, 40, 50))
+        val blurSetup: (BlurView) -> Unit = { blur ->
+            blur.setupWith(root)
+                .setFrameClearDrawable(root.background)
+                .setBlurRadius(15f)
+                .setOverlayColor(Color.argb(28, 220, 224, 238))
+        }
+        blurSetup(toolbarBlur)
+        blurSetup(topFade)
+        blurSetup(bottomFade)
+
+        // Extend the fades behind system bars while keeping controls clear of them.
+        root.setOnApplyWindowInsetsListener { _, insets ->
+            val statusInset = insets.getInsets(android.view.WindowInsets.Type.statusBars()).top
+            val navInset = insets.getInsets(android.view.WindowInsets.Type.navigationBars()).bottom
+            (header.layoutParams as FrameLayout.LayoutParams).apply {
+                topMargin = statusInset
+            }.also { header.layoutParams = it }
+            toolbarParams.bottomMargin = navInset + dp(14)
+            toolbarBlur.layoutParams = toolbarParams
+            bottomFade.layoutParams = FrameLayout.LayoutParams(-1, dp(150) + navInset, Gravity.BOTTOM)
+            insets
+        }
+        root.requestApplyInsets()
         updateNavigationButtons()
     }
 

@@ -74,7 +74,7 @@ class MainActivity : Activity() {
 
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
-        addFadeBlur(root, Gravity.TOP, 18, 1)
+        addFadeBlur(root, Gravity.TOP, 40, 1)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL

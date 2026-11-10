@@ -125,25 +125,42 @@ class MainActivity : Activity() {
         }
         root.addView(progressFrame, progressParams)
 
-        // A single frosted-glass surface: BlurView samples the live webpage behind it.
-        toolbarBlur = BlurView(this).apply {
-            // Subtle live backdrop blur, contained only inside the floating pill.
-            background = rounded(Color.argb(48, 35, 37, 46), 36)
+        // Safari-inspired split floating toolbar: navigation, address, and reload are separate pills.
+        val navBlur = BlurView(this).apply {
+            background = rounded(Color.argb(48, 35, 37, 46), 30)
             clipToOutline = true
             elevation = dp(14).toFloat()
         }
-        val toolbar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(7), dp(8), dp(7))
-            background = null
+        toolbarBlur = BlurView(this).apply {
+            background = rounded(Color.argb(48, 35, 37, 46), 30)
+            clipToOutline = true
+            elevation = dp(14).toFloat()
+        }
+        val reloadBlur = BlurView(this).apply {
+            background = rounded(Color.argb(48, 35, 37, 46), 30)
+            clipToOutline = true
+            elevation = dp(14).toFloat()
         }
 
+        val navGroup = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(3), dp(4), dp(3), dp(4))
+        }
         backButton = makeButton("‹", Color.TRANSPARENT) {
             if (webView.canGoBack()) webView.goBack()
         }
         forwardButton = makeButton("›", Color.TRANSPARENT) {
             if (webView.canGoForward()) webView.goForward()
+        }
+        navGroup.addView(backButton, LinearLayout.LayoutParams(dp(38), dp(42)))
+        navGroup.addView(forwardButton, LinearLayout.LayoutParams(dp(34), dp(42)))
+        navBlur.addView(navGroup, FrameLayout.LayoutParams(-1, -1))
+
+        val addressGroup = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(9), dp(4), dp(5), dp(4))
         }
         addressBar = EditText(this).apply {
             setSingleLine(true)
@@ -151,7 +168,7 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             setHintTextColor(muted)
             hint = "Search or enter address"
-            setPadding(dp(8), 0, dp(8), 0)
+            setPadding(dp(8), 0, dp(4), 0)
             background = null
             imeOptions = EditorInfo.IME_ACTION_GO
             inputType = android.text.InputType.TYPE_CLASS_TEXT or
@@ -165,21 +182,30 @@ class MainActivity : Activity() {
             }
         }
         val bookmark = makeButton("☆", Color.TRANSPARENT) { saveBookmark() }
-        val reload = makeButton("↻", Color.TRANSPARENT) { webView.reload() }
+        addressGroup.addView(addressBar, LinearLayout.LayoutParams(0, dp(42), 1f))
+        addressGroup.addView(bookmark, LinearLayout.LayoutParams(dp(38), dp(42)))
+        toolbarBlur.addView(addressGroup, FrameLayout.LayoutParams(-1, -1))
 
-        toolbar.addView(backButton, LinearLayout.LayoutParams(dp(34), dp(42)))
-        toolbar.addView(forwardButton, LinearLayout.LayoutParams(dp(30), dp(42)))
-        toolbar.addView(addressBar, LinearLayout.LayoutParams(0, dp(42), 1f))
-        toolbar.addView(bookmark, LinearLayout.LayoutParams(dp(36), dp(42)))
-        toolbar.addView(reload, LinearLayout.LayoutParams(dp(36), dp(42)))
+        val reload = makeButton("↻", Color.TRANSPARENT) { webView.reload() }
+        reloadBlur.addView(reload, FrameLayout.LayoutParams(-1, -1))
+
+        val toolbar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        toolbar.addView(navBlur, LinearLayout.LayoutParams(dp(80), dp(54)))
+        toolbar.addView(toolbarBlur, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+            leftMargin = dp(8)
+            rightMargin = dp(8)
+        })
+        toolbar.addView(reloadBlur, LinearLayout.LayoutParams(dp(54), dp(54)))
 
         toolbarParams = FrameLayout.LayoutParams(-1, dp(58), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
             leftMargin = dp(14)
             rightMargin = dp(14)
             bottomMargin = dp(22)
         }
-        toolbarBlur.addView(toolbar, FrameLayout.LayoutParams(-1, -1))
-        root.addView(toolbarBlur, toolbarParams)
+        root.addView(toolbar, toolbarParams)
 
         setContentView(root)
 
@@ -191,10 +217,12 @@ class MainActivity : Activity() {
                 .setOverlayColor(Color.TRANSPARENT)
         }
 
-        toolbarBlur.setupWith(blurTarget)
-            .setFrameClearDrawable(root.background)
-            .setBlurRadius(8f)
-            .setOverlayColor(Color.argb(18, 35, 37, 46))
+        listOf(navBlur, toolbarBlur, reloadBlur).forEach { pill ->
+            pill.setupWith(blurTarget)
+                .setFrameClearDrawable(root.background)
+                .setBlurRadius(8f)
+                .setOverlayColor(Color.argb(18, 35, 37, 46))
+        }
 
         // Extend the fades behind system bars while keeping controls clear of them.
         root.setOnApplyWindowInsetsListener { _, insets ->

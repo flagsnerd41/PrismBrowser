@@ -1,6 +1,7 @@
 package com.prism.browser
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.Context
 import android.graphics.Color
@@ -45,6 +46,8 @@ class MainActivity : Activity() {
     private lateinit var toolbarBlur: BlurView
     private lateinit var header: LinearLayout
     private val fadeBlurLayers = mutableListOf<BlurView>()
+    private val tabs = mutableListOf<String?>(null)
+    private var currentTab = 0
     private lateinit var toolbarParams: FrameLayout.LayoutParams
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
@@ -103,10 +106,8 @@ class MainActivity : Activity() {
         header.addView(brand)
         header.addView(dot)
         header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        val tabs = makeButton("▢", Color.TRANSPARENT) {
-            Toast.makeText(this, "Tabs are coming in the next update", Toast.LENGTH_SHORT).show()
-        }
-        header.addView(tabs, LinearLayout.LayoutParams(dp(42), dp(42)))
+        val tabsButton = makeButton("▢", Color.TRANSPARENT) { showTabs() }
+        header.addView(tabsButton, LinearLayout.LayoutParams(dp(42), dp(42)))
         root.addView(header, FrameLayout.LayoutParams(-1, dp(58), Gravity.TOP))
 
         progressTrack = View(this).apply { setBackgroundColor(Color.TRANSPARENT) }
@@ -184,7 +185,7 @@ class MainActivity : Activity() {
             // One continuous BlurView gives a real, even backdrop blur without strip banding.
             blur.setupWith(blurTarget)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(8f)
+                .setBlurRadius(6f)
                 .setOverlayColor(Color.TRANSPARENT)
         }
 
@@ -256,7 +257,10 @@ class MainActivity : Activity() {
                 addressBar.setText(url.orEmpty())
                 progressFill.visibility = View.GONE
                 updateNavigationButtons()
-                prefs.edit().putString("last_page", url).apply()
+                if (url != null && !url.startsWith("https://prism.local/")) {
+                    tabs[currentTab] = url
+                    prefs.edit().putString("last_page", url).apply()
+                }
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -302,7 +306,52 @@ class MainActivity : Activity() {
 
     private fun loadHome() {
         addressBar.setText("")
-        webView.loadUrl("https://www.google.com")
+        val html = """
+            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+            *{box-sizing:border-box}body{margin:0;background:#14151b;color:#f5f4fa;font-family:Arial,sans-serif;padding:12vh 8vw 40px}
+            .brand{font-size:38px;font-weight:700;letter-spacing:-2px}.dot{color:#beaeff}
+            p{color:#9da0af;font-size:14px;margin:8px 0 34px}
+            form{display:flex;background:#242630;border:1px solid #373946;border-radius:22px;padding:16px;margin-bottom:28px}
+            input{background:transparent;border:0;outline:0;color:white;font-size:16px;width:100%}
+            .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+            a{display:block;text-decoration:none;color:#eee;background:#20222b;border-radius:18px;padding:20px 16px;font-size:15px}
+            small{display:block;color:#9da0af;margin-top:6px;font-size:12px}
+            </style></head><body><div class="brand">prism<span class="dot">.</span></div>
+            <p>A calmer place to browse.</p>
+            <form action="https://www.google.com/search"><input name="q" placeholder="Search the web or enter a URL"></form>
+            <div class="grid"><a href="https://www.google.com">Google<small>Search</small></a>
+            <a href="https://www.youtube.com">YouTube<small>Watch</small></a>
+            <a href="https://www.wikipedia.org">Wikipedia<small>Explore</small></a>
+            <a href="https://www.github.com">GitHub<small>Build</small></a></div></body></html>
+        """.trimIndent()
+        webView.loadDataWithBaseURL("https://prism.local/", html, "text/html", "UTF-8", null)
+    }
+
+    private fun showTabs() {
+        val labels = mutableListOf("＋  New tab")
+        tabs.forEachIndexed { index, url ->
+            val title = if (url.isNullOrBlank()) "Start page" else Uri.parse(url).host ?: url
+            labels.add((if (index == currentTab) "● " else "") + (index + 1) + ". " + title)
+        }
+        AlertDialog.Builder(this).setTitle("Tabs · ${tabs.size}")
+            .setItems(labels.toTypedArray()) { _, which ->
+                if (which == 0) { tabs.add(null); currentTab = tabs.lastIndex; loadHome() }
+                else { currentTab = which - 1; val url = tabs[currentTab]; if (url.isNullOrBlank()) loadHome() else webView.loadUrl(url) }
+            }
+            .setNeutralButton("Close current tab") { _, _ ->
+                if (tabs.size > 1) { tabs.removeAt(currentTab); currentTab = (currentTab - 1).coerceAtLeast(0) }
+                else tabs[0] = null
+                val url = tabs[currentTab]; if (url.isNullOrBlank()) loadHome() else webView.loadUrl(url)
+            }.setNegativeButton("Done", null).show()
+    }
+
+    private fun showBookmarks() {
+        val saved = prefs.getStringSet("bookmarks", emptySet())?.toList()?.sorted() ?: emptyList()
+        if (saved.isEmpty()) { Toast.makeText(this, "No bookmarks yet", Toast.LENGTH_SHORT).show(); return }
+        AlertDialog.Builder(this).setTitle("Bookmarks")
+            .setItems(saved.map { it.substringBefore("|") }.toTypedArray()) { _, which -> navigate(saved[which].substringAfter("|", "")) }
+            .setNegativeButton("Close", null).show()
     }
 
     private fun saveBookmark() {
@@ -312,6 +361,7 @@ class MainActivity : Activity() {
         saved.add(title + "|" + url)
         prefs.edit().putStringSet("bookmarks", saved).apply()
         Toast.makeText(this, "Bookmark saved", Toast.LENGTH_SHORT).show()
+        showBookmarks()
     }
 
     private fun updateNavigationButtons() {

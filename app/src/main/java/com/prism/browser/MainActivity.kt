@@ -14,7 +14,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager
-import android.graphics.drawable.GradientDrawable.Orientation
 import eightbitlab.com.blurview.BlurView
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
@@ -37,8 +36,7 @@ class MainActivity : Activity() {
     private lateinit var forwardButton: TextView
     private lateinit var toolbarBlur: BlurView
     private lateinit var header: LinearLayout
-    private lateinit var topFade: BlurView
-    private lateinit var bottomFade: BlurView
+    private val fadeBlurLayers = mutableListOf<BlurView>()
     private lateinit var toolbarParams: FrameLayout.LayoutParams
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
@@ -68,21 +66,10 @@ class MainActivity : Activity() {
         webView = WebView(this).apply { setBackgroundColor(Color.WHITE) }
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
 
-        // Fades are behind the browser controls, not painted over the page or toolbar.
-        topFade = BlurView(this).apply {
-            background = GradientDrawable(
-                Orientation.TOP_BOTTOM,
-                intArrayOf(Color.argb(78, 28, 30, 38), Color.argb(0, 28, 30, 38))
-            )
-        }
-        bottomFade = BlurView(this).apply {
-            background = GradientDrawable(
-                Orientation.BOTTOM_TOP,
-                intArrayOf(Color.argb(92, 24, 25, 32), Color.argb(0, 24, 25, 32))
-            )
-        }
-        root.addView(topFade, FrameLayout.LayoutParams(-1, dp(76), Gravity.TOP))
-        root.addView(bottomFade, FrameLayout.LayoutParams(-1, dp(104), Gravity.BOTTOM))
+        // True fade blur: many thin strips, each with progressively less blur.
+        // This fades the blur strength itself instead of drawing a blurred rectangle.
+        addFadeBlur(root, Gravity.TOP, 100, 20, reverse = false)
+        addFadeBlur(root, Gravity.BOTTOM, 112, 22, reverse = true)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -179,15 +166,20 @@ class MainActivity : Activity() {
 
         setContentView(root)
 
-        val blurSetup: (BlurView) -> Unit = { blur ->
+        toolbarBlur.setupWith(root)
+            .setFrameClearDrawable(root.background)
+            .setBlurRadius(10f)
+            .setOverlayColor(Color.argb(20, 220, 224, 238))
+
+        fadeBlurLayers.forEachIndexed { index, blur ->
+            val count = if (index < 20) 20 else 22
+            val layerIndex = if (index < 20) index else index - 20
+            val strength = 1f - (layerIndex.toFloat() / count)
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(12f)
-                .setOverlayColor(Color.argb(28, 220, 224, 238))
+                .setBlurRadius(18f * strength)
+                .setOverlayColor(Color.argb((48f * strength).toInt(), 28, 30, 38))
         }
-        blurSetup(toolbarBlur)
-        blurSetup(topFade)
-        blurSetup(bottomFade)
 
         // Extend the fades behind system bars while keeping controls clear of them.
         root.setOnApplyWindowInsetsListener { _, insets ->
@@ -198,11 +190,40 @@ class MainActivity : Activity() {
             }.also { header.layoutParams = it }
             toolbarParams.bottomMargin = navInset + dp(14)
             toolbarBlur.layoutParams = toolbarParams
-            bottomFade.layoutParams = FrameLayout.LayoutParams(-1, dp(104) + navInset, Gravity.BOTTOM)
             insets
         }
         root.requestApplyInsets()
         updateNavigationButtons()
+    }
+
+    private fun addFadeBlur(
+        root: FrameLayout,
+        gravity: Int,
+        totalHeightDp: Int,
+        stripCount: Int,
+        reverse: Boolean
+    ) {
+        val stripHeight = totalHeightDp.toFloat() / stripCount
+        repeat(stripCount) { index ->
+            val strip = BlurView(this).apply {
+                setBackgroundColor(Color.TRANSPARENT)
+                isClickable = false
+                isFocusable = false
+            }
+            val params = FrameLayout.LayoutParams(
+                -1,
+                dp(kotlin.math.ceil(stripHeight).toInt()),
+                gravity
+            )
+            val offset = dp((index * stripHeight).toInt())
+            if (gravity == Gravity.TOP) {
+                params.topMargin = offset
+            } else {
+                params.bottomMargin = offset
+            }
+            root.addView(strip, params)
+            fadeBlurLayers.add(strip)
+        }
     }
 
     private fun configureWebView() {

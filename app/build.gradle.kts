@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+dependencies {
+    implementation("com.github.Dimezis:BlurView:version-2.0.6")
+}
+
 android {
     namespace = "com.prism.browser"
     compileSdk = 35

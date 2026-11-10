@@ -74,7 +74,7 @@ class MainActivity : Activity() {
 
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
-        addFadeBlur(root, Gravity.TOP, 140, 1)
+        addFadeBlur(root, Gravity.TOP, 18, 1)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -176,7 +176,7 @@ class MainActivity : Activity() {
             // One continuous BlurView gives a real, even backdrop blur without strip banding.
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(12f)
+                .setBlurRadius(8f)
                 .setOverlayColor(Color.TRANSPARENT)
         }
 
@@ -361,7 +361,7 @@ private class FadeBlurView(context: Context) : BlurView(context) {
         maskPaint.shader = LinearGradient(
             0f, 0f, 0f, height.toFloat(),
             intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT),
-            floatArrayOf(0f, 0.38f, 1f),
+            floatArrayOf(0f, 0.18f, 1f),
             Shader.TileMode.CLAMP
         )
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), maskPaint)

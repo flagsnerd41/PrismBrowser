@@ -307,27 +307,67 @@ class MainActivity : Activity() {
     private fun loadHome() {
         addressBar.setText("")
         val html = """
-            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+            <!doctype html>
+            <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
             <style>
-            *{box-sizing:border-box}body{margin:0;background:#14151b;color:#f5f4fa;font-family:Arial,sans-serif;padding:12vh 8vw 40px}
-            .brand{font-size:38px;font-weight:700;letter-spacing:-2px}.dot{color:#beaeff}
-            p{color:#9da0af;font-size:14px;margin:8px 0 34px}
-            form{display:flex;background:#242630;border:1px solid #373946;border-radius:22px;padding:16px;margin-bottom:28px}
-            input{background:transparent;border:0;outline:0;color:white;font-size:16px;width:100%}
-            .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-            a{display:block;text-decoration:none;color:#eee;background:#20222b;border-radius:18px;padding:20px 16px;font-size:15px}
-            small{display:block;color:#9da0af;margin-top:6px;font-size:12px}
-            </style></head><body><div class="brand">prism<span class="dot">.</span></div>
-            <p>A calmer place to browse.</p>
-            <form action="https://www.google.com/search"><input name="q" placeholder="Search the web or enter a URL"></form>
-            <div class="grid"><a href="https://www.google.com">Google<small>Search</small></a>
-            <a href="https://www.youtube.com">YouTube<small>Watch</small></a>
-            <a href="https://www.wikipedia.org">Wikipedia<small>Explore</small></a>
-            <a href="https://www.github.com">GitHub<small>Build</small></a></div></body></html>
+            *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:'DM Sans',sans-serif;color:#fff}
+            body{min-height:100vh;background:#11131b;background-size:cover;background-position:center;background-attachment:fixed;transition:background-image .35s ease}
+            body:before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,rgba(8,10,17,.34),rgba(8,10,17,.56) 42%,rgba(8,10,17,.88));z-index:0}
+            .page{position:relative;z-index:1;max-width:680px;margin:auto;padding:15vh 25px 44px}
+            .topline{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}
+            .brand{font:700 32px 'Space Grotesk',sans-serif;letter-spacing:-1.8px;text-shadow:0 2px 18px #0006}.brand span{color:#c7b7ff}
+            .date{font-size:12px;color:#ffffffb8;letter-spacing:.4px}
+            .greeting{font:600 clamp(27px,7vw,39px) 'Space Grotesk',sans-serif;letter-spacing:-1.3px;margin:0 0 7px}
+            .sub{margin:0 0 25px;color:#ffffffb8;font-size:14px}
+            .search{display:flex;align-items:center;gap:12px;padding:0 17px;height:58px;border:1px solid #ffffff38;border-radius:19px;background:#ffffff1c;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 12px 36px #0002}
+            .search svg{width:19px;height:19px;opacity:.8;flex:none}.search input{width:100%;border:0;outline:0;background:transparent;color:white;font:500 15px 'DM Sans',sans-serif}.search input::placeholder{color:#ffffffa8}
+            .section{display:flex;align-items:center;justify-content:space-between;margin:31px 2px 13px}.section strong{font:600 14px 'Space Grotesk',sans-serif;letter-spacing:.2px}.section span{font-size:11px;color:#ffffffa0}
+            .sites{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+            .site{min-height:91px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-decoration:none;color:#fff;border:1px solid #ffffff24;border-radius:18px;background:#ffffff17;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .18s,background .18s}
+            .site:active{transform:scale(.96);background:#ffffff30}.site img{width:27px;height:27px;border-radius:8px;background:#fff;padding:3px;object-fit:contain}.site span{font-size:11px;font-weight:600}
+            .wallpapers{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 8px;scrollbar-width:none}.wallpapers::-webkit-scrollbar{display:none}
+            .wall{flex:none;width:88px;height:58px;border:2px solid #ffffff50;border-radius:14px;background-size:cover;background-position:center;position:relative;overflow:hidden}.wall.active{border-color:#d3c5ff;box-shadow:0 0 0 2px #bdaaff55}.wall:after{content:attr(data-name);position:absolute;inset:auto 0 0;padding:13px 5px 5px;text-align:center;font-size:10px;font-weight:600;background:linear-gradient(transparent,#0009)}
+            .foot{margin-top:28px;text-align:center;color:#ffffff80;font-size:11px;letter-spacing:.3px}
+            @media(min-width:600px){.page{padding-top:12vh}.sites{gap:13px}.site{min-height:105px}.site span{font-size:12px}}
+            </style></head>
+            <body><main class="page">
+            <div class="topline"><div class="brand">prism<span>.</span></div><div class="date" id="clock">YOUR SPACE</div></div>
+            <h1 class="greeting">A little space to explore.</h1><p class="sub">Search the web, pick up where you left off.</p>
+            <form class="search" action="https://www.google.com/search" method="get">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7.2"/><path d="m16.5 16.5 4 4"/></svg>
+            <input name="q" autocomplete="off" placeholder="Search anything..." aria-label="Search the web"></form>
+            <div class="section"><strong>Quick access</strong><span>YOUR FAVOURITES</span></div>
+            <div class="sites">
+            <a class="site" href="https://www.google.com"><img src="https://www.google.com/s2/favicons?domain=google.com&sz=64"><span>Google</span></a>
+            <a class="site" href="https://www.youtube.com"><img src="https://www.google.com/s2/favicons?domain=youtube.com&sz=64"><span>YouTube</span></a>
+            <a class="site" href="https://www.github.com"><img src="https://www.google.com/s2/favicons?domain=github.com&sz=64"><span>GitHub</span></a>
+            <a class="site" href="https://www.wikipedia.org"><img src="https://www.google.com/s2/favicons?domain=wikipedia.org&sz=64"><span>Wikipedia</span></a>
+            <a class="site" href="https://www.reddit.com"><img src="https://www.google.com/s2/favicons?domain=reddit.com&sz=64"><span>Reddit</span></a>
+            <a class="site" href="https://www.instagram.com"><img src="https://www.google.com/s2/favicons?domain=instagram.com&sz=64"><span>Instagram</span></a>
+            <a class="site" href="https://www.chatgpt.com"><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64"><span>ChatGPT</span></a>
+            <a class="site" href="https://www.x.com"><img src="https://www.google.com/s2/favicons?domain=x.com&sz=64"><span>X</span></a>
+            </div>
+            <div class="section"><strong>Wallpapers</strong><span>TAP TO CHANGE</span></div>
+            <div class="wallpapers" id="wallpapers">
+            <button class="wall active" data-name="Alpine" data-bg="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1400&q=85" style="background-image:url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=240&q=65')"></button>
+            <button class="wall" data-name="Golden" data-bg="https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1400&q=85" style="background-image:url('https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=240&q=65')"></button>
+            <button class="wall" data-name="Coast" data-bg="https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=85" style="background-image:url('https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=240&q=65')"></button>
+            <button class="wall" data-name="Forest" data-bg="https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&q=85" style="background-image:url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=240&q=65')"></button>
+            <button class="wall" data-name="Night" data-bg="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=85" style="background-image:url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=240&q=65')"></button>
+            </div><div class="foot">MADE FOR THE WAY YOU BROWSE</div>
+            </main><script>
+            const walls=[...document.querySelectorAll('.wall')];
+            function setWall(button){document.body.style.backgroundImage='url("'+button.dataset.bg+'")';walls.forEach(w=>w.classList.toggle('active',w===button));try{localStorage.setItem('prism-wallpaper',button.dataset.name)}catch(e){}}
+            walls.forEach(w=>w.addEventListener('click',()=>setWall(w)));
+            try{const saved=localStorage.getItem('prism-wallpaper');const chosen=walls.find(w=>w.dataset.name===saved);setWall(chosen||walls[0])}catch(e){setWall(walls[0])}
+            const clock=document.getElementById('clock');const updateClock=()=>{const d=new Date();clock.textContent=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}).toUpperCase()};updateClock();
+            </script></body></html>
         """.trimIndent()
         webView.loadDataWithBaseURL("https://prism.local/", html, "text/html", "UTF-8", null)
     }
-
     private fun showTabs() {
         val labels = mutableListOf("＋  New tab")
         tabs.forEachIndexed { index, url ->

@@ -190,8 +190,8 @@ class MainActivity : Activity() {
 
         // Extend the fades behind system bars while keeping controls clear of them.
         root.setOnApplyWindowInsetsListener { _, insets ->
-            val statusInset = insets.getInsets(android.view.WindowInsets.Type.statusBars()).top
-            val navInset = insets.getInsets(android.view.WindowInsets.Type.navigationBars()).bottom
+            val statusInset = insets.systemWindowInsetTop
+            val navInset = insets.systemWindowInsetBottom
             (header.layoutParams as FrameLayout.LayoutParams).apply {
                 topMargin = statusInset
             }.also { header.layoutParams = it }

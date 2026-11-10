@@ -166,14 +166,12 @@ class MainActivity : Activity() {
 
         setContentView(root)
 
-        fadeBlurLayers.forEachIndexed { index, blur ->
-            val count = 10
-            val layerIndex = index
-            val strength = 1f - (layerIndex.toFloat() / count)
+        fadeBlurLayers.forEach { blur ->
+            // One continuous BlurView gives a real, even backdrop blur without strip banding.
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(18f * strength)
-                .setOverlayColor(Color.argb((48f * strength).toInt(), 28, 30, 38))
+                .setBlurRadius(22f)
+                .setOverlayColor(Color.TRANSPARENT)
         }
 
         // Extend the fades behind system bars while keeping controls clear of them.
@@ -197,27 +195,17 @@ class MainActivity : Activity() {
         totalHeightDp: Int,
         stripCount: Int
     ) {
-        val stripHeight = totalHeightDp.toFloat() / stripCount
-        repeat(stripCount) { index ->
-            val strip = BlurView(this).apply {
-                setBackgroundColor(Color.TRANSPARENT)
-                isClickable = false
-                isFocusable = false
-            }
-            val params = FrameLayout.LayoutParams(
-                -1,
-                dp(kotlin.math.ceil(stripHeight).toInt()),
-                gravity
-            )
-            val offset = dp((index * stripHeight).toInt())
-            if (gravity == Gravity.TOP) {
-                params.topMargin = offset
-            } else {
-                params.bottomMargin = offset
-            }
-            root.addView(strip, params)
-            fadeBlurLayers.add(strip)
+        // A single full-width BlurView avoids the visible horizontal bands caused by strips.
+        val blur = BlurView(this).apply {
+            setBackgroundColor(Color.TRANSPARENT)
+            isClickable = false
+            isFocusable = false
         }
+        root.addView(
+            blur,
+            FrameLayout.LayoutParams(-1, dp(totalHeightDp), gravity)
+        )
+        fadeBlurLayers.add(blur)
     }
 
     private fun configureWebView() {

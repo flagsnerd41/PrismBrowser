@@ -48,6 +48,8 @@ class MainActivity : Activity() {
     private val fadeBlurLayers = mutableListOf<BlurView>()
     private val tabs = mutableListOf<String?>(null)
     private var currentTab = 0
+    private var desktopMode = false
+    private val desktopUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     private lateinit var toolbarParams: FrameLayout.LayoutParams
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
@@ -369,21 +371,42 @@ class MainActivity : Activity() {
         webView.loadDataWithBaseURL("https://prism.local/", html, "text/html", "UTF-8", null)
     }
     private fun showTabs() {
-        val labels = mutableListOf("＋  New tab")
+        val labels = mutableListOf("＋  New tab", "Desktop site: " + if (desktopMode) "On ✓" else "Off")
         tabs.forEachIndexed { index, url ->
             val title = if (url.isNullOrBlank()) "Start page" else Uri.parse(url).host ?: url
             labels.add((if (index == currentTab) "● " else "") + (index + 1) + ". " + title)
         }
         AlertDialog.Builder(this).setTitle("Tabs · ${tabs.size}")
             .setItems(labels.toTypedArray()) { _, which ->
-                if (which == 0) { tabs.add(null); currentTab = tabs.lastIndex; loadHome() }
-                else { currentTab = which - 1; val url = tabs[currentTab]; if (url.isNullOrBlank()) loadHome() else webView.loadUrl(url) }
+                when (which) {
+                    0 -> { tabs.add(null); currentTab = tabs.lastIndex; loadHome() }
+                    1 -> toggleDesktopMode()
+                    else -> {
+                        currentTab = which - 2
+                        val url = tabs[currentTab]
+                        if (url.isNullOrBlank()) loadHome() else webView.loadUrl(url)
+                    }
+                }
             }
             .setNeutralButton("Close current tab") { _, _ ->
                 if (tabs.size > 1) { tabs.removeAt(currentTab); currentTab = (currentTab - 1).coerceAtLeast(0) }
                 else tabs[0] = null
                 val url = tabs[currentTab]; if (url.isNullOrBlank()) loadHome() else webView.loadUrl(url)
             }.setNegativeButton("Done", null).show()
+    }
+
+    private fun toggleDesktopMode() {
+        desktopMode = !desktopMode
+        prefs.edit().putBoolean("desktop_mode", desktopMode).apply()
+        webView.settings.apply {
+            userAgentString = if (desktopMode) desktopUserAgent else android.webkit.WebSettings.getDefaultUserAgent(this@MainActivity)
+            useWideViewPort = desktopMode
+            loadWithOverviewMode = desktopMode
+        }
+        Toast.makeText(this, if (desktopMode) "Desktop site enabled" else "Mobile site enabled", Toast.LENGTH_SHORT).show()
+        val currentUrl = webView.url
+        if (currentUrl.isNullOrBlank() || currentUrl.startsWith("https://prism.local/")) loadHome()
+        else webView.reload()
     }
 
     private fun showBookmarks() {

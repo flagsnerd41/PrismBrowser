@@ -232,7 +232,7 @@ class MainActivity : Activity() {
                 topMargin = statusInset
             }.also { header.layoutParams = it }
             toolbarParams.bottomMargin = navInset + dp(14)
-            toolbarBlur.layoutParams = toolbarParams
+            toolbar.layoutParams = toolbarParams
             insets
         }
         root.requestApplyInsets()

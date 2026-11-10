@@ -1,0 +1,1 @@
+# PrismBrowser ProGuard rules

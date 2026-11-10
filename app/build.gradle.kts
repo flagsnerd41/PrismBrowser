@@ -25,6 +25,10 @@ android {
         }
     }
 
+    dependencies {
+        implementation("com.github.Dimezis:BlurView:version-2.0.6")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -13,6 +13,8 @@ import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.view.WindowManager
+import eightbitlab.com.blurview.BlurView
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.WebChromeClient
@@ -32,6 +34,7 @@ class MainActivity : Activity() {
     private lateinit var progressFill: View
     private lateinit var backButton: TextView
     private lateinit var forwardButton: TextView
+    private lateinit var toolbarBlur: BlurView
     private val prefs by lazy { getSharedPreferences("prism_browser", Context.MODE_PRIVATE) }
     private val ink = Color.rgb(20, 21, 27)
     private val pillColor = Color.rgb(30, 32, 40)
@@ -42,6 +45,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = ink
         window.navigationBarColor = ink
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         buildInterface()
         configureWebView()
         if (savedInstanceState != null) webView.restoreState(savedInstanceState) else loadHome()
@@ -91,12 +95,17 @@ class MainActivity : Activity() {
         }
         root.addView(progressFrame, progressParams)
 
+        // A single frosted-glass surface: BlurView samples the live webpage behind it.
+        toolbarBlur = BlurView(this).apply {
+            background = rounded(Color.argb(112, 38, 40, 50), 36)
+            clipToOutline = true
+            elevation = dp(14).toFloat()
+        }
         val toolbar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(pillColor, 36)
             setPadding(dp(8), dp(7), dp(8), dp(7))
-            elevation = dp(12).toFloat()
+            background = null
         }
 
         backButton = makeButton("‹", Color.TRANSPARENT) {
@@ -138,8 +147,15 @@ class MainActivity : Activity() {
             rightMargin = dp(14)
             bottomMargin = dp(22)
         }
-        root.addView(toolbar, toolbarParams)
+        toolbarBlur.addView(toolbar, FrameLayout.LayoutParams(-1, -1))
+        root.addView(toolbarBlur, toolbarParams)
         setContentView(root)
+
+        // Keep the pill above Gboard when the address field is focused.
+        toolbarBlur.setupWith(root)
+            .setFrameClearDrawable(root.background)
+            .setBlurRadius(20f)
+            .setOverlayColor(Color.argb(88, 38, 40, 50))
         updateNavigationButtons()
     }
 

@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation("com.github.Dimezis:BlurView:version-3.2.0")
 }
 

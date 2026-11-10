@@ -8,6 +8,8 @@ import android.graphics.Color
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Shader
@@ -32,6 +34,7 @@ import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 
@@ -41,8 +44,8 @@ class MainActivity : Activity() {
     private lateinit var addressBar: EditText
     private lateinit var progressTrack: View
     private lateinit var progressFill: View
-    private lateinit var backButton: TextView
-    private lateinit var forwardButton: TextView
+    private lateinit var backButton: View
+    private lateinit var forwardButton: View
     private lateinit var toolbarBlur: BlurView
     private lateinit var header: LinearLayout
     private val fadeBlurLayers = mutableListOf<BlurView>()
@@ -94,6 +97,13 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(8), dp(18), dp(8))
         }
+        val mark = ImageView(this).apply {
+            setImageResource(R.drawable.ic_prism_mark)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        header.addView(mark, LinearLayout.LayoutParams(dp(25), dp(29)).apply {
+            rightMargin = dp(9)
+        })
         val brand = TextView(this).apply {
             text = "prism"
             textSize = 23f
@@ -108,7 +118,7 @@ class MainActivity : Activity() {
         header.addView(brand)
         header.addView(dot)
         header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        val tabsButton = makeButton("▢", Color.TRANSPARENT) { showTabs() }
+        val tabsButton = makeIconButton("tabs", Color.TRANSPARENT) { showTabs() }
         header.addView(tabsButton, LinearLayout.LayoutParams(dp(42), dp(42)))
         root.addView(header, FrameLayout.LayoutParams(-1, dp(58), Gravity.TOP))
 
@@ -147,10 +157,10 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(dp(3), dp(4), dp(3), dp(4))
         }
-        backButton = makeButton("‹", Color.TRANSPARENT) {
+        backButton = makeIconButton("back", Color.TRANSPARENT) {
             if (webView.canGoBack()) webView.goBack()
         }
-        forwardButton = makeButton("›", Color.TRANSPARENT) {
+        forwardButton = makeIconButton("forward", Color.TRANSPARENT) {
             if (webView.canGoForward()) webView.goForward()
         }
         navGroup.addView(backButton, LinearLayout.LayoutParams(dp(38), dp(42)))
@@ -181,12 +191,12 @@ class MainActivity : Activity() {
                 } else false
             }
         }
-        val bookmark = makeButton("☆", Color.TRANSPARENT) { saveBookmark() }
+        val bookmark = makeIconButton("bookmark", Color.TRANSPARENT) { saveBookmark() }
         addressGroup.addView(addressBar, LinearLayout.LayoutParams(0, dp(42), 1f))
         addressGroup.addView(bookmark, LinearLayout.LayoutParams(dp(38), dp(42)))
         toolbarBlur.addView(addressGroup, FrameLayout.LayoutParams(-1, -1))
 
-        val reload = makeButton("↻", Color.TRANSPARENT) { webView.reload() }
+        val reload = makeIconButton("reload", Color.TRANSPARENT) { webView.reload() }
         reloadBlur.addView(reload, FrameLayout.LayoutParams(-1, -1))
 
         val toolbar = LinearLayout(this).apply {
@@ -461,6 +471,16 @@ class MainActivity : Activity() {
         forwardButton.alpha = if (webView.canGoForward()) 1f else 0.45f
     }
 
+
+    private fun makeIconButton(icon: String, color: Int, action: () -> Unit): View =
+        IconButtonView(this, icon).apply {
+            background = rounded(color, 24)
+            isClickable = true
+            isFocusable = true
+            contentDescription = icon.replaceFirstChar { it.uppercase() }
+            setOnClickListener { action() }
+        }
+
     private fun makeButton(label: String, color: Int, action: () -> Unit): TextView =
         TextView(this).apply {
             text = label
@@ -521,5 +541,59 @@ private class FadeBlurView(context: Context) : BlurView(context) {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), maskPaint)
         maskPaint.shader = null
         canvas.restoreToCount(checkpoint)
+    }
+}
+
+
+private class IconButtonView(context: Context, private val icon: String) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 2.0f * resources.displayMetrics.density
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val path = Path()
+    private val density = resources.displayMetrics.density
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val save = canvas.save()
+        canvas.translate(width / 2f, height / 2f)
+        canvas.scale(density, density)
+        paint.strokeWidth = 1.9f
+        paint.style = Paint.Style.STROKE
+        path.reset()
+        when (icon) {
+            "back" -> {
+                path.moveTo(3.5f, 0f); path.lineTo(-3.5f, 0f)
+                path.moveTo(-3.5f, 0f); path.lineTo(0.5f, -4f)
+                path.moveTo(-3.5f, 0f); path.lineTo(0.5f, 4f)
+                canvas.drawPath(path, paint)
+            }
+            "forward" -> {
+                path.moveTo(-3.5f, 0f); path.lineTo(3.5f, 0f)
+                path.moveTo(3.5f, 0f); path.lineTo(-0.5f, -4f)
+                path.moveTo(3.5f, 0f); path.lineTo(-0.5f, 4f)
+                canvas.drawPath(path, paint)
+            }
+            "bookmark" -> {
+                path.moveTo(-4f, -6f); path.lineTo(4f, -6f)
+                path.lineTo(4f, 6f); path.lineTo(0f, 3.2f)
+                path.lineTo(-4f, 6f); path.close()
+                canvas.drawPath(path, paint)
+            }
+            "reload" -> {
+                val oval = RectF(-5.5f, -5.5f, 5.5f, 5.5f)
+                canvas.drawArc(oval, 42f, 285f, false, paint)
+                path.moveTo(2.5f, -5.2f); path.lineTo(6f, -5.2f); path.lineTo(5.4f, -1.8f)
+                canvas.drawPath(path, paint)
+            }
+            "tabs" -> {
+                canvas.drawRoundRect(RectF(-5.5f, -4.5f, 3.5f, 6f), 2f, 2f, paint)
+                canvas.drawRoundRect(RectF(-2.5f, -6f, 5.5f, 4.5f), 2f, 2f, paint)
+            }
+        }
+        canvas.restoreToCount(save)
     }
 }

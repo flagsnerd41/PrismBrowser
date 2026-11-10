@@ -188,7 +188,7 @@ class MainActivity : Activity() {
                 .setOverlayColor(Color.TRANSPARENT)
         }
 
-        toolbarBlur.setupWith(root)
+        toolbarBlur.setupWith(blurTarget)
             .setFrameClearDrawable(root.background)
             .setBlurRadius(8f)
             .setOverlayColor(Color.argb(18, 35, 37, 46))

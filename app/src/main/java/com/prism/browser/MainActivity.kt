@@ -4,6 +4,12 @@ import android.app.Activity
 import android.app.DownloadManager
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
@@ -68,7 +74,7 @@ class MainActivity : Activity() {
 
         // True fade blur: many thin strips, each with progressively less blur.
         // This fades the blur strength itself instead of drawing a blurred rectangle.
-        addFadeBlur(root, Gravity.TOP, 100, 10)
+        addFadeBlur(root, Gravity.TOP, 140, 1)
 
         header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -170,7 +176,7 @@ class MainActivity : Activity() {
             // One continuous BlurView gives a real, even backdrop blur without strip banding.
             blur.setupWith(root)
                 .setFrameClearDrawable(root.background)
-                .setBlurRadius(22f)
+                .setBlurRadius(12f)
                 .setOverlayColor(Color.TRANSPARENT)
         }
 
@@ -196,7 +202,7 @@ class MainActivity : Activity() {
         stripCount: Int
     ) {
         // A single full-width BlurView avoids the visible horizontal bands caused by strips.
-        val blur = BlurView(this).apply {
+        val blur = FadeBlurView(this).apply {
             setBackgroundColor(Color.TRANSPARENT)
             isClickable = false
             isFocusable = false
@@ -337,5 +343,29 @@ class MainActivity : Activity() {
             webView.destroy()
         }
         super.onDestroy()
+    }
+}
+
+private class FadeBlurView(context: Context) : BlurView(context) {
+    private val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+    }
+
+    override fun draw(canvas: Canvas) {
+        if (width == 0 || height == 0) {
+            super.draw(canvas)
+            return
+        }
+        val checkpoint = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)
+        super.draw(canvas)
+        maskPaint.shader = LinearGradient(
+            0f, 0f, 0f, height.toFloat(),
+            intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT),
+            floatArrayOf(0f, 0.38f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), maskPaint)
+        maskPaint.shader = null
+        canvas.restoreToCount(checkpoint)
     }
 }
